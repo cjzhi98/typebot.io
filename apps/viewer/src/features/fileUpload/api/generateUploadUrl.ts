@@ -24,7 +24,6 @@ export const generateUploadUrl = publicProcedure
   .input(
     z.object({
       sessionId: z.string(),
-      blockId: z.string(),
       fileName: z.string(),
       fileType: z.string().optional(),
     }),
@@ -36,7 +35,7 @@ export const generateUploadUrl = publicProcedure
       fileUrl: z.string(),
     }),
   )
-  .mutation(async ({ input: { fileName, sessionId, fileType, blockId } }) => {
+  .mutation(async ({ input: { fileName, sessionId, fileType } }) => {
     if (!env.S3_ENDPOINT || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY)
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -68,41 +67,16 @@ export const generateUploadUrl = publicProcedure
         message: "Can't find typebot",
       });
 
-    if (session.state.currentBlockId === undefined)
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Can't find currentBlockId in session state",
-      });
-
-    const { block } = getBlockById(
-      session.state.currentBlockId,
-      parseGroups(typebot.groups, {
-        typebotVersion: typebot.version,
-      }),
-    );
-
-    if (
-      block?.type !== InputBlockType.FILE &&
-      (block.type !== InputBlockType.TEXT ||
-        !block.options?.attachments?.isEnabled) &&
-      (block.type !== InputBlockType.TEXT ||
-        !block.options?.audioClip?.isEnabled)
-    )
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Current block does not expect file upload",
-      });
-
-    const { visibility, maxFileSize } = parseFileUploadParams(block);
+    const maxFileSize = env.NEXT_PUBLIC_BOT_FILE_UPLOAD_MAX_SIZE;
 
     const resultId = session.state.typebotsQueue[0].resultId;
 
     const filePath =
       "workspaceId" in typebot && typebot.workspaceId && resultId
-        ? `${visibility === "Private" ? "private" : "public"}/workspaces/${
+        ? `private/workspaces/${
             typebot.workspaceId
-          }/typebots/${typebotId}/results/${resultId}/blocks/${blockId}/${fileName}`
-        : `public/tmp/typebots/${typebotId}/blocks/${blockId}/${fileName}`;
+          }/typebots/${typebotId}/results/${resultId}/${fileName}`
+        : `public/tmp/${typebotId}/${fileName}`;
 
     const presignedPostPolicy = await generatePresignedPostPolicy({
       fileType,
@@ -114,8 +88,8 @@ export const generateUploadUrl = publicProcedure
       presignedUrl: presignedPostPolicy.postURL,
       formData: presignedPostPolicy.formData,
       fileUrl:
-        visibility === "Private" && !isPreview
-          ? `${env.NEXTAUTH_URL}/api/typebots/${typebotId}/results/${resultId}/blocks/${blockId}/${fileName}`
+        !isPreview
+          ? `${env.NEXTAUTH_URL}/api/typebots/${typebotId}/results/${resultId}/${fileName}`
           : env.S3_PUBLIC_CUSTOM_DOMAIN
             ? `${env.S3_PUBLIC_CUSTOM_DOMAIN}/${filePath}`
             : `${presignedPostPolicy.postURL}/${presignedPostPolicy.formData.key}`,
