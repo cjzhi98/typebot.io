@@ -71,12 +71,7 @@ export const generateUploadUrl = publicProcedure
 
     const resultId = session.state.typebotsQueue[0].resultId;
 
-    const filePath =
-      "workspaceId" in typebot && typebot.workspaceId && resultId
-        ? `private/workspaces/${
-            typebot.workspaceId
-          }/typebots/${typebotId}/results/${resultId}/${fileName}`
-        : `public/tmp/${typebotId}/${fileName}`;
+    const filePath = `public/tmp/${typebotId}/${fileName}`;
 
     const presignedPostPolicy = await generatePresignedPostPolicy({
       fileType,
