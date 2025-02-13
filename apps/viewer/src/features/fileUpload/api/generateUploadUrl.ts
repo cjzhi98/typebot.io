@@ -82,12 +82,7 @@ export const generateUploadUrl = publicProcedure
     return {
       presignedUrl: presignedPostPolicy.postURL,
       formData: presignedPostPolicy.formData,
-      fileUrl:
-        !isPreview
-          ? `${env.NEXTAUTH_URL}/api/typebots/${typebotId}/results/${resultId}/${fileName}`
-          : env.S3_PUBLIC_CUSTOM_DOMAIN
-            ? `${env.S3_PUBLIC_CUSTOM_DOMAIN}/${filePath}`
-            : `${presignedPostPolicy.postURL}/${presignedPostPolicy.formData.key}`,
+      fileUrl: `${presignedPostPolicy.postURL}/${presignedPostPolicy.formData.key}`,
     };
   });
 
