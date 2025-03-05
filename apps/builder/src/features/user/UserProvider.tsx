@@ -1,21 +1,26 @@
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/lib/toast";
 import { useColorMode } from "@chakra-ui/react";
 import { env } from "@typebot.io/env";
 import { isDefined, isNotDefined } from "@typebot.io/lib/utils";
-import type { User } from "@typebot.io/schemas/features/user/schema";
+import type {
+  ClientUser,
+  UpdateUser,
+  User,
+} from "@typebot.io/schemas/features/user/schema";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import type { ReactNode } from "react";
 import { createContext, useEffect, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { setLocaleInCookies } from "./helpers/setLocaleInCookies";
 import { updateUserQuery } from "./queries/updateUserQuery";
 
 export const userContext = createContext<{
-  user?: User;
+  user?: ClientUser;
   isLoading: boolean;
   currentWorkspaceId?: string;
   logOut: () => void;
-  updateUser: (newUser: Partial<User>) => void;
+  updateUser: (newUser: Partial<UpdateUser>) => void;
 }>({
   isLoading: false,
   logOut: () => {},
@@ -27,8 +32,6 @@ const debounceTimeout = 1000;
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [user, setUser] = useState<User | undefined>();
-  const { showToast } = useToast();
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string>();
   const { setColorMode } = useColorMode();
 
@@ -43,21 +46,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       ? "dark"
       : "light";
     const userPrefersSystemMode =
-      !user?.preferredAppAppearance || user.preferredAppAppearance === "system";
+      !session?.user?.preferredAppAppearance ||
+      session.user.preferredAppAppearance === "system";
     const computedColorMode = userPrefersSystemMode
       ? systemColorScheme
-      : user?.preferredAppAppearance;
+      : session.user?.preferredAppAppearance;
     if (computedColorMode === currentColorScheme) return;
     setColorMode(computedColorMode);
-  }, [setColorMode, user?.preferredAppAppearance]);
+  }, [setColorMode, session?.user?.preferredAppAppearance]);
 
   useEffect(() => {
-    if (isDefined(user) || isNotDefined(session)) return;
+    if (isDefined(session?.user.id)) return;
     setCurrentWorkspaceId(
       localStorage.getItem("currentWorkspaceId") ?? undefined,
     );
-    setUser(session.user as User);
-  }, [session, user]);
+  }, [session?.user.id]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -71,36 +74,47 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       router.pathname,
     );
     if (isSignInPath || isPathPublicFriendly) return;
-    if (!user && status === "unauthenticated")
+    if (status === "unauthenticated")
       router.replace({
         pathname: "/signin",
-        query: {
-          redirectPath: router.asPath,
-        },
+        query:
+          router.asPath !== "/typebots"
+            ? {
+                redirectPath: router.asPath,
+              }
+            : undefined,
       });
-  }, [router, status, user]);
+  }, [router.isReady, router.pathname, status]);
 
-  const updateUser = (updates: Partial<User>) => {
-    if (isNotDefined(user)) return;
-    const newUser = { ...user, ...updates };
-    setUser(newUser);
-    saveUser(updates);
-  };
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (status === "loading") return;
+
+    const preferredLanguage = session?.user?.preferredLanguage;
+    const currentLocale = router.locale;
+
+    if (preferredLanguage && preferredLanguage !== currentLocale) {
+      setLocaleInCookies(preferredLanguage);
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: router.query,
+        },
+        undefined,
+        { locale: preferredLanguage },
+      );
+    }
+  }, [router.isReady, router.locale, status, session?.user?.preferredLanguage]);
 
   const saveUser = useDebouncedCallback(
     async (updates: Partial<User>) => {
-      if (isNotDefined(user)) return;
-      const { error } = await updateUserQuery(user.id, updates);
-      if (error) showToast({ title: error.name, description: error.message });
+      if (isNotDefined(session)) return;
+      const { error } = await updateUserQuery(session.user.id, updates);
+      if (error) toast({ context: error.name, description: error.message });
       await refreshUser();
     },
     env.NEXT_PUBLIC_E2E_TEST ? 0 : debounceTimeout,
   );
-
-  const logOut = () => {
-    signOut();
-    setUser(undefined);
-  };
 
   useEffect(() => {
     return () => {
@@ -111,11 +125,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   return (
     <userContext.Provider
       value={{
-        user,
+        user: session?.user,
         isLoading: status === "loading",
+        logOut: signOut,
+        updateUser: saveUser,
         currentWorkspaceId,
-        logOut,
-        updateUser,
       }}
     >
       {children}

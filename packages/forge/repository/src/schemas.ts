@@ -5,6 +5,8 @@ import { calComBlock } from "@typebot.io/cal-com-block";
 import { calComBlockSchema } from "@typebot.io/cal-com-block/schemas";
 import { chatNodeBlock } from "@typebot.io/chat-node-block";
 import { chatNodeBlockSchema } from "@typebot.io/chat-node-block/schemas";
+import { deepSeekBlock } from "@typebot.io/deepseek-block";
+import { deepSeekBlockSchema } from "@typebot.io/deepseek-block/schemas";
 import { difyAiBlock } from "@typebot.io/dify-ai-block";
 import { difyAiBlockSchema } from "@typebot.io/dify-ai-block/schemas";
 import { elevenlabsBlock } from "@typebot.io/elevenlabs-block";
@@ -19,6 +21,8 @@ import { openRouterBlock } from "@typebot.io/open-router-block";
 import { openRouterBlockSchema } from "@typebot.io/open-router-block/schemas";
 import { openAIBlock } from "@typebot.io/openai-block";
 import { openAIBlockSchema } from "@typebot.io/openai-block/schemas";
+import { perplexityBlock } from "@typebot.io/perplexity-block";
+import { perplexityBlockSchema } from "@typebot.io/perplexity-block/schemas";
 import { posthogBlock } from "@typebot.io/posthog-block";
 import { posthogBlockSchema } from "@typebot.io/posthog-block/schemas";
 import { qrCodeBlock } from "@typebot.io/qrcode-block";
@@ -47,6 +51,8 @@ export const forgedBlockSchemas = {
   [groqBlock.id]: groqBlockSchema,
   [zendeskBlock.id]: zendeskBlockSchema,
   [posthogBlock.id]: posthogBlockSchema,
+  [perplexityBlock.id]: perplexityBlockSchema,
+  [deepSeekBlock.id]: deepSeekBlockSchema,
 } as const;
 
 export const forgedBlockSchema = z.discriminatedUnion("type", [
@@ -65,5 +71,7 @@ export const forgedBlockSchema = z.discriminatedUnion("type", [
   groqBlockSchema,
   zendeskBlockSchema,
   posthogBlockSchema,
+  perplexityBlockSchema,
+  deepSeekBlockSchema,
 ]);
 export type ForgedBlock = z.infer<typeof forgedBlockSchema>;

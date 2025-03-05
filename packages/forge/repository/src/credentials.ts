@@ -3,6 +3,8 @@ import { anthropicBlock } from "@typebot.io/anthropic-block";
 import { anthropicCredentialsSchema } from "@typebot.io/anthropic-block/schemas";
 import { chatNodeBlock } from "@typebot.io/chat-node-block";
 import { chatNodeCredentialsSchema } from "@typebot.io/chat-node-block/schemas";
+import { deepSeekBlock } from "@typebot.io/deepseek-block";
+import { deepSeekCredentialsSchema } from "@typebot.io/deepseek-block/schemas";
 import { difyAiBlock } from "@typebot.io/dify-ai-block";
 import { difyAiCredentialsSchema } from "@typebot.io/dify-ai-block/schemas";
 import { elevenlabsBlock } from "@typebot.io/elevenlabs-block";
@@ -17,6 +19,8 @@ import { openRouterBlock } from "@typebot.io/open-router-block";
 import { openRouterCredentialsSchema } from "@typebot.io/open-router-block/schemas";
 import { openAIBlock } from "@typebot.io/openai-block";
 import { openAICredentialsSchema } from "@typebot.io/openai-block/schemas";
+import { perplexityBlock } from "@typebot.io/perplexity-block";
+import { perplexityCredentialsSchema } from "@typebot.io/perplexity-block/schemas";
 import { posthogBlock } from "@typebot.io/posthog-block";
 import { posthogCredentialsSchema } from "@typebot.io/posthog-block/schemas";
 import { segmentBlock } from "@typebot.io/segment-block";
@@ -40,4 +44,6 @@ export const forgedCredentialsSchemas = {
   [groqBlock.id]: groqCredentialsSchema,
   [zendeskBlock.id]: zendeskCredentialsSchema,
   [posthogBlock.id]: posthogCredentialsSchema,
+  [perplexityBlock.id]: perplexityCredentialsSchema,
+  [deepSeekBlock.id]: deepSeekCredentialsSchema,
 };
